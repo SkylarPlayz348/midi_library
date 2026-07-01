@@ -64,10 +64,9 @@ uint32_t varlen_to_int (const uint8_t* var, size_t* size) {
 }
 
 uint8_t* int_to_varlen(uint32_t val, size_t* _size)	{
-	uint32_t val2 = val;
 	//determine the necessary size of the variable length quantity
 	size_t count = 1;
-	while(val2 >>= 1){
+	while(val >>= 1){
 		count++;
 	}
 
@@ -92,7 +91,7 @@ uint8_t* int_to_varlen(uint32_t val, size_t* _size)	{
 	return var;
 }
 
-void new_midichunk(struct MidiChunk* chunk, enum ChunkType type){
+void new_midichunk(MidiChunk* chunk, ChunkType type){
 	if(type == CHUNK_HEADER){
 		memcpy(chunk->type, "MThd", TYPE_LEN);
 	} else {
@@ -103,27 +102,27 @@ void new_midichunk(struct MidiChunk* chunk, enum ChunkType type){
 	chunk->chunk = NULL;
 }
 
-void free_midichunk(struct MidiChunk* chunk){
+void free_midichunk(MidiChunk* chunk){
 	if(chunk->type_e == CHUNK_HEADER){
-		struct MidiHeaderChunk* header = (struct MidiHeaderChunk*) chunk->chunk;
+		MidiHeaderChunk* header = (MidiHeaderChunk*) chunk->chunk;
 		free_midi_header(header);
 		free(header);
 		header = NULL;
 	} else {
-		struct MidiTrackChunk* track = (struct MidiTrackChunk*) chunk->chunk;
+		MidiTrackChunk* track = (MidiTrackChunk*) chunk->chunk;
 		free_midi_track(track);
 		free(track);
 		track = NULL;
 	}
 }
 
-void new_midi(struct Midi* midi) {
+void new_midi(Midi* midi) {
 	midi->chunk_count = 0;
-	midi->chunks = malloc(sizeof(struct MidiChunk*) * midi->chunk_count);
-	midi->header = NULL;
+	midi->chunks = malloc(sizeof(MidiChunk*) * midi->chunk_count);
+	// midi_add_header(midi, format, tracks, division);
 }
 
-void free_midi(struct Midi* midi){
+void free_midi(Midi* midi){
 	for(size_t i = 0; i < midi->chunk_count;++i){
 		free_midichunk(midi->chunks[i]);
 		free(midi->chunks[i]);
@@ -133,39 +132,39 @@ void free_midi(struct Midi* midi){
 	midi->chunks = NULL;
 }
 
-struct MidiChunk* midi_add_chunk(struct Midi* midi){
+MidiChunk* midi_add_chunk(Midi* midi){
 	midi->chunk_count++;
-	midi->chunks = realloc(midi->chunks, sizeof(struct MidiChunk*) * midi->chunk_count);
+	midi->chunks = realloc(midi->chunks, sizeof(MidiChunk*) * midi->chunk_count);
 
-	struct MidiChunk* chunk = malloc(sizeof(struct MidiChunk));
+	MidiChunk* chunk = malloc(sizeof(MidiChunk));
 	midi->chunks[midi->chunk_count - 1] = chunk;
 	return chunk;
 }
 
-struct MidiHeaderChunk* midi_add_header(struct Midi* midi, uint16_t format, uint16_t tracks, uint16_t division){
+MidiHeaderChunk* midi_add_header(Midi* midi, uint16_t format, uint16_t tracks, uint16_t division){
 	// A Midi cannot have more than one header track
 	// assert that it does not already have one
 	assert(!midi->header); 
 
-	struct MidiChunk* chunk = midi_add_chunk(midi);
+	MidiChunk* chunk = midi_add_chunk(midi);
 	new_midichunk(chunk, CHUNK_HEADER);
-	struct MidiHeaderChunk* header = malloc(sizeof(struct MidiHeaderChunk));
+	MidiHeaderChunk* header = malloc(sizeof(MidiHeaderChunk));
 	new_midi_header(header, HEADER_LEN, format, tracks, division);
 	chunk->chunk = header;
 	midi->header = header;
 	return header;
 }
 
-struct MidiTrackChunk* midi_add_track(struct Midi* midi){
-	struct MidiChunk* chunk = midi_add_chunk(midi);
+MidiTrackChunk* midi_add_track(Midi* midi){
+	MidiChunk* chunk = midi_add_chunk(midi);
 	new_midichunk(chunk, CHUNK_TRACK);
-	struct MidiTrackChunk* track = malloc(sizeof(struct MidiTrackChunk));
+	MidiTrackChunk* track = malloc(sizeof(MidiTrackChunk));
 	new_midi_track(track);
 	chunk->chunk = track;
 	return track;
 }
 
-void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t format, uint16_t tracks, uint16_t division){
+void new_midi_header(MidiHeaderChunk* header, uint32_t length, uint16_t format, uint16_t tracks, uint16_t division){
 	header->length = length;
 
 	header->format = format;
@@ -173,23 +172,23 @@ void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t f
 	header->division = division;
 }
 
-void free_midi_header(struct MidiHeaderChunk* header){
+void free_midi_header(MidiHeaderChunk* header){
 	//nothing is allocated
 }
 
-void new_midi_event(struct MidiEvent* event, uint32_t delta_time, const uint8_t* ev, size_t event_length){
+void new_midi_event(MidiEvent* event, uint32_t delta_time, const uint8_t* ev, size_t event_length){
 	event->delta_time = delta_time;
 	event->event = malloc(sizeof(uint8_t) * event_length);
 	event->event_len = event_length;
 	memcpy(event->event, ev, event_length);
 }
 
-void free_midi_event(struct MidiEvent* event){
+void free_midi_event(MidiEvent* event){
 	free(event->event);
 	event->event = NULL;
 }
 
-struct MidiEvent* parse_midi_event(const uint8_t* event, size_t* size_read){
+MidiEvent* parse_midi_event(const uint8_t* event, size_t* size_read){
 	size_t delta_time_size;
 	uint32_t delta_time = varlen_to_int(event, &delta_time_size);
 	const uint8_t* event_code = event + delta_time_size;
@@ -212,7 +211,7 @@ struct MidiEvent* parse_midi_event(const uint8_t* event, size_t* size_read){
 			event_size = parse_midi_meta_event(event_code);
 		}
 	} 
-	struct MidiEvent* e = malloc(sizeof(struct MidiEvent));
+	MidiEvent* e = malloc(sizeof(MidiEvent));
 	new_midi_event(e, delta_time, event_code, event_size);
 
 	if(size_read){
@@ -252,13 +251,13 @@ size_t parse_midi_meta_event(const uint8_t* event_code){
 	return len_size + len + 2;
 }
 
-void new_midi_track(struct MidiTrackChunk* track){
+void new_midi_track(MidiTrackChunk* track){
 	track->event_count = 0;
 
-	track->events = malloc(sizeof(struct MidiEvent*) * track ->event_count);
+	track->events = malloc(sizeof(MidiEvent*) * track ->event_count);
 }
 
-void free_midi_track(struct MidiTrackChunk* track){
+void free_midi_track(MidiTrackChunk* track){
 	for(size_t i = 0; i < track->event_count; ++i){
 		free_midi_event(track->events[i]);
 		free(track->events[i]);
@@ -268,10 +267,10 @@ void free_midi_track(struct MidiTrackChunk* track){
 	track->events = NULL;
 }
 
-size_t track_length(struct MidiTrackChunk* track){
+size_t track_length(MidiTrackChunk* track){
 	size_t s = 0;
 	for(size_t i = 0; i < track->event_count; ++i){
-		struct MidiEvent* e = track->events[i];
+		MidiEvent* e = track->events[i];
 		size_t sz;
 		free(int_to_varlen(e->delta_time, &sz));
 		s += sz;
@@ -280,24 +279,24 @@ size_t track_length(struct MidiTrackChunk* track){
 	return s;
 }
 
-struct MidiEvent* track_add_event(struct MidiTrackChunk* track){
+MidiEvent* track_add_event(MidiTrackChunk* track){
 	track->event_count++;
-	track->events = realloc(track->events, sizeof(struct MidiEvent*) * track->event_count);
+	track->events = realloc(track->events, sizeof(MidiEvent*) * track->event_count);
 
-	struct MidiEvent* event = malloc(sizeof(struct MidiEvent));
+	MidiEvent* event = malloc(sizeof(MidiEvent));
 	track->events[track->event_count - 1] = event;
 	return event;
 }
 
-struct MidiEvent* track_add_event_full(struct MidiTrackChunk* track, uint32_t delta_time, const uint8_t* event_data, size_t event_data_len){
-	struct MidiEvent* event = track_add_event(track);
+MidiEvent* track_add_event_full(MidiTrackChunk* track, uint32_t delta_time, const uint8_t* event_data, size_t event_data_len){
+	MidiEvent* event = track_add_event(track);
 	new_midi_event(event, delta_time, event_data, event_data_len);
 	return event;
 }
 
-void track_add_event_existing(struct MidiTrackChunk* track, struct MidiEvent* event){
+void track_add_event_existing(MidiTrackChunk* track, MidiEvent* event){
 	track->event_count++;
-	track->events = realloc(track->events, sizeof(struct MidiEvent*) * track->event_count);
+	track->events = realloc(track->events, sizeof(MidiEvent*) * track->event_count);
 
 	track->events[track->event_count - 1] = event;
 }
@@ -324,18 +323,18 @@ uint32_t read_uint32_t(FILE* f){
 	return ntohl(d);
 }
 
-void write_midi(struct Midi* midi, FILE* f) {
+void write_midi(Midi* midi, FILE* f) {
 	for(uint32_t i = 0; i < midi->chunk_count; ++i){
-		struct MidiChunk* chunk = midi->chunks[i];
+		MidiChunk* chunk = midi->chunks[i];
 		fwrite(chunk->type, sizeof(uint8_t), TYPE_LEN, f);
 		if(chunk->type_e == CHUNK_HEADER){
-			struct MidiHeaderChunk* header = (struct MidiHeaderChunk*) chunk->chunk;
+			MidiHeaderChunk* header = (MidiHeaderChunk*) chunk->chunk;
 			write_uint32_t(header->length, f);
 			write_uint16_t(header->format, f);
 			write_uint16_t(header->tracks, f);
 			write_uint16_t(header->division, f);
 		} else {
-			struct MidiTrackChunk* track = (struct MidiTrackChunk*) chunk->chunk;
+			MidiTrackChunk* track = (MidiTrackChunk*) chunk->chunk;
 			write_uint32_t(track_length(track), f);
 			for(size_t i = 0; i < track->event_count; ++i){
 				size_t time_size;
@@ -349,8 +348,8 @@ void write_midi(struct Midi* midi, FILE* f) {
 	}
 }
 
-struct Midi* read_midi(FILE* f){	
-	struct Midi* midi = malloc(sizeof(struct Midi));
+Midi* read_midi(FILE* f){	
+	Midi* midi = malloc(sizeof(Midi));
 	new_midi(midi);
 
 	uint8_t chunk_head[TYPE_LEN];
@@ -367,7 +366,7 @@ struct Midi* read_midi(FILE* f){
 	for(size_t i = 0; i < tracks; ++i){
 		fread(chunk_head, sizeof(uint8_t), TYPE_LEN, f);
 		uint32_t size_track = read_uint32_t(f);
-		struct MidiTrackChunk* track = midi_add_track(midi);
+		MidiTrackChunk* track = midi_add_track(midi);
 
 		//read all the events in the track
 		uint8_t* event = malloc(sizeof(uint8_t) * size_track);
@@ -376,7 +375,7 @@ struct Midi* read_midi(FILE* f){
 		size_t read = 0;
 		while(1){
 			size_t event_size;
-			struct MidiEvent* e = parse_midi_event((event + read), &event_size);
+			MidiEvent* e = parse_midi_event((event + read), &event_size);
 			track_add_event_existing(track, e);
 			read += event_size;
 			if(read == size_track){

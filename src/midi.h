@@ -12,10 +12,10 @@
 /*
  * Represents the type of chunk internally.
  */
-enum ChunkType {
+typedef enum ChunkType {
 	CHUNK_HEADER, 
 	CHUNK_TRACK
-};
+} ChunkType;
 
 /*
  * Converts a variable-length quantity to an integer
@@ -33,12 +33,12 @@ uint8_t* int_to_varlen(uint32_t val, size_t* size);
  *
  * This should never be used directly
  */
-struct MidiChunk {
+typedef struct MidiChunk {
 	uint8_t type[TYPE_LEN];
 	enum ChunkType type_e;
 
 	void* chunk;
-};
+} MidiChunk;
 
 /*
  * Construct a MidiChunk with the provided ChunkType
@@ -55,14 +55,50 @@ void new_midichunk(struct MidiChunk* chunk, enum ChunkType type);
 void free_midichunk(struct MidiChunk* chunk);
 
 /*
+ * Represents the header chunk of a Midi file
+ *
+ * This is often handled entirely by `midi_add_header`
+ */
+typedef struct MidiHeaderChunk {
+	uint32_t length;
+
+	uint16_t format;
+	uint16_t tracks;
+	uint16_t division;
+} MidiHeaderChunk;
+
+/*
  * The top level container of a MIDI file. This should be allocated and free'd by the caller
  */
-struct Midi {
+typedef struct Midi {
 	uint32_t chunk_count;
-	struct MidiChunk** chunks;
+	MidiChunk** chunks;
 
-	struct MidiHeaderChunk* header;
-};
+	MidiHeaderChunk* header;
+} Midi;
+
+/*
+ * This represents an event within a track. 
+ *
+ * This is usually created with a helper method.
+ */
+typedef struct MidiEvent {
+	uint32_t delta_time;
+
+	size_t event_len;
+	uint8_t* event;
+} MidiEvent;
+
+/*
+ * This represents a track containing a series of `MidiEvent`s. 
+ *
+ * This is usually allocated by `midi_add_track` and freed with the Midi which contains it
+ */
+typedef struct MidiTrackChunk {
+	size_t event_count;
+
+	MidiEvent** events;
+} MidiTrackChunk;
 
 /*
  * Construct a MIDI. 
@@ -83,55 +119,30 @@ void free_midi(struct Midi* midi);
  *
  * This should not be called directly
  */
-struct MidiChunk* midi_add_chunk(struct Midi* midi);
+MidiChunk* midi_add_chunk(struct Midi* midi);
 /*
  * Allocates and creates a new header chunk for the Midi. 
  *
  * This will be freed with its parent `Midi`
  */
-struct MidiHeaderChunk* midi_add_header(struct Midi* midi, uint16_t format, uint16_t tracks, uint16_t division);
+MidiHeaderChunk* midi_add_header(struct Midi* midi, uint16_t format, uint16_t tracks, uint16_t division);
 /* 
  * Allocates and creates a new track chunk for the Midi. 
  *
  * This will be freed with its parent Midi
  */
-struct MidiTrackChunk* midi_add_track(struct Midi* midi);
-
-/*
- * Represents the header chunk of a Midi file
- *
- * This is often handled entirely by `midi_add_header`
- */
-struct MidiHeaderChunk {
-	uint32_t length;
-
-	uint16_t format;
-	uint16_t tracks;
-	uint16_t division;
-};
+MidiTrackChunk* midi_add_track(struct Midi* midi);
 
 /*
  * Create a fill a MidiHeader with the given details
  */
-void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t format, uint16_t tracks, uint16_t division);
+void new_midi_header(MidiHeaderChunk* header, uint32_t length, uint16_t format, uint16_t tracks, uint16_t division);
 /*
  * Free the MidiHeader. 
  *
  * This will be called on your behalf. It also currently does nothing
  */
-void free_midi_header(struct MidiHeaderChunk* header);
-
-/*
- * This represents an event within a track. 
- *
- * This is usually created with a helper method.
- */
-struct MidiEvent {
-	uint32_t delta_time;
-
-	size_t event_len;
-	uint8_t* event;
-};
+void free_midi_header(MidiHeaderChunk* header);
 
 /*
  * This populates an event with the given details. 
@@ -140,13 +151,13 @@ struct MidiEvent {
  *
  * This is usually called for you
  */
-void new_midi_event(struct MidiEvent* event, uint32_t delta_time, const uint8_t* ev, size_t event_length);
+void new_midi_event(MidiEvent* event, uint32_t delta_time, const uint8_t* ev, size_t event_length);
 /*
  * This frees the `MidiEvent`
  *
  * This is usually called on your behalf (i.e. if the event is part of a track);
  */
-void free_midi_event(struct MidiEvent* event);
+void free_midi_event(MidiEvent* event);
 
 /*
  * Used to pull a `MidiEvent` from a buffer which may contain multiple `MidiEvent`s.
@@ -165,51 +176,40 @@ size_t parse_midi_sysex_event(const uint8_t* event_code);
 size_t parse_midi_meta_event(const uint8_t* event_code);
 
 /*
- * This represents a track containing a series of `MidiEvent`s. 
- *
- * This is usually allocated by `midi_add_track` and freed with the Midi which contains it
- */
-struct MidiTrackChunk {
-	size_t event_count;
-
-	struct MidiEvent** events;
-};
-
-/*
  * Construct the track
  *
  * This is usually called for you
  */
-void new_midi_track(struct MidiTrackChunk* track);
+void new_midi_track(MidiTrackChunk* track);
 /*
  * Free the `MidiTrackChunk`
  *
  * This is usually called on your behalf (i.e. if the track is a part of a Midi)
  */
-void free_midi_track(struct MidiTrackChunk* track);
+void free_midi_track(MidiTrackChunk* track);
 
 /*
  * This creates a new empty event within the given track. This event can then be populated with details. 
  *
  * It will be freed automatically with the track.
  */
-struct MidiEvent* track_add_event(struct MidiTrackChunk* track);
+MidiEvent* track_add_event(MidiTrackChunk* track);
 /*
  * This creates a new event within the given track. This event is created with the given details.
  *
  * It will be freed automatically with the track.
  */
-struct MidiEvent* track_add_event_full(struct MidiTrackChunk* track, uint32_t delta_time, const uint8_t* event_data, size_t event_data_len);
+MidiEvent* track_add_event_full(MidiTrackChunk* track, uint32_t delta_time, const uint8_t* event_data, size_t event_data_len);
 /*
  * This adds an existing `MidiEvent` to the given track.
  *
  * It will be freed automatically with the track.
  */
-void track_add_event_existing(struct MidiTrackChunk* track, struct MidiEvent* event);
+void track_add_event_existing(MidiTrackChunk* track, MidiEvent* event);
 /*
  * This calculates the total size of the track. It is used within `write_midi`
  */
-size_t track_length(struct MidiTrackChunk* track);
+size_t track_length(MidiTrackChunk* track);
 
 /*
  * Used to write uint16_t and uin32_t in big-endian format. 
