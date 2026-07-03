@@ -82,10 +82,10 @@ EventString* add_byte(EventString* event, uint8_t b);
 /*
 WIP topmost functions aka least amount of control
 
-bool add_voice_event(EventString* event, uint8_t status, uint8_t channel);
+bool add_voice_event(MidiTrackChunk* track, uint32_t, delta_time, EventString* event, uint8_t status, uint8_t channel);
 
-bool add_sysex_event(EventString* event, uint8_t type);
+bool add_sysex_event(MidiTrackChunk* track, uint32_t, delta_time, EventString* event, uint8_t type);
 
-bool add_meta_event(EventString* event, uint8_t subtype);
+bool add_meta_event(MidiTrackChunk* track, uint32_t, delta_time, EventString* event, uint8_t subtype);
 */
 #endif /* MIDI_HELPER_H */
