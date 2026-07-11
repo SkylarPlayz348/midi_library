@@ -78,6 +78,4 @@ int main(){
 }
 ```
 
-This could then be compiled by `gcc test.c -lmidi`. 
-
-You can also simply run `make test` to build and and execute a small test program which will generate, write, then read a small MIDI file
+This could then be compiled by `gcc test.c -lmidi`.
