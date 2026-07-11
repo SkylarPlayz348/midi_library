@@ -17,15 +17,15 @@ Here is a program to create a __very__ simple MIDI.
 
 int main(){
 	//create a new midi 
-	struct Midi* m = malloc(sizeof(struct Midi));
+	Midi* m = malloc(sizeof(Midi));
 	new_midi(m);
 	//set it to mode 0, with 1 track, and 384 ticks per quarternote
 	midi_add_header(m, 0, 1, 384);
 
 	//add a track
-	struct MidiTrackChunk* track = midi_add_track(m);
+	MidiTrackChunk* track = midi_add_track(m);
 
-	struct EventString* e = malloc(sizeof(struct EventString));
+	EventString* e = malloc(sizeof(EventString));
 
 	//add a meta event which specifies the track name as "Trumpet"
 	e = new_event_string(e);
