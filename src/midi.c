@@ -63,9 +63,10 @@ uint32_t varlen_to_int (const uint8_t* var, size_t* size) {
 }
 
 uint8_t* int_to_varlen(uint32_t val, size_t* _size)	{
+	uint32_t val2 = val;
 	//determine the necessary size of the variable length quantity
 	size_t count = 1;
-	while(val >>= 1){
+	while(val2 >>= 1){
 		count++;
 	}
 
