@@ -59,20 +59,16 @@ EventString* add_byte(EventString* event, uint8_t b){
 }
 
 // DO NOT USE IN CURRENT STATE
-bool add_voice_event(MidiTrackChunk* track, uint32_t, delta_time, EventString* event, uint8_t status, uint8_t channel){
+bool add_voice_event(MidiTrackChunk* track, uint32_t delta_time, EventString* event, uint8_t status, uint8_t channel){
 
 };
 
 // DO NOT USE IN CURRENT STATE
-bool add_sysex_event(MidiTrackChunk* track, uint32_t, delta_time, EventString* event, uint8_t type){
+bool add_sysex_event(MidiTrackChunk* track, uint32_t delta_time, EventString* event, uint8_t type){
 
 };
 
 // DO NOT USE IN CURRENT STATE
-bool add_meta_event(MidiTrackChunk* track, uint32_t, delta_time, EventString* event, uint8_t subtype){
-	event = new_event_string(event);
-	event = add_meta_message(event, subtype);
-	event = add_string(event, "Trumpet", strlen("Trumpet"));
-	track_add_event_full(track, 0, event->event_string, event->event_string_len);
-	free_event_string(event);
+bool add_meta_event(MidiTrackChunk* track, uint32_t delta_time, EventString* event, uint8_t subtype){
+
 };

@@ -88,4 +88,5 @@ bool add_sysex_event(MidiTrackChunk* track, uint32_t, delta_time, EventString* e
 
 bool add_meta_event(MidiTrackChunk* track, uint32_t, delta_time, EventString* event, uint8_t subtype);
 */
+
 #endif /* MIDI_HELPER_H */
